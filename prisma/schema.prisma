@@ -69,7 +69,7 @@ model VerificationToken {
 
 model Snipit {
     id           Int                  @id @default(autoincrement())
-    prompt       String
+    prompt       String               @db.VarChar(240)
     isPublic     Boolean
     createdBy    String
     dateCreated  DateTime             @default(now())

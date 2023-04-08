@@ -23,7 +23,11 @@ export const snipitRouter = createTRPCRouter({
         take: 1,
         skip,
         where: whereClause,
-        include: { tags: { include: { tag: true } } },
+        include: {
+          tags: { include: { tag: true } },
+          interactions: { where: { userId: ctx.session.user.id }, take: 1 },
+          creator: true,
+        },
       });
 
       return snipit;
@@ -46,6 +50,7 @@ export const snipitRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // create new snipit
       const newSnipit = await ctx.prisma.snipit.create({
         data: {
           prompt: input.prompt,
@@ -54,6 +59,16 @@ export const snipitRouter = createTRPCRouter({
           createdBy: ctx.session.user.id,
         },
       });
+
+      // add owner's interaction record
+      await ctx.prisma.snipitInteractions.create({
+        data: {
+          snipitId: newSnipit.id,
+          userId: ctx.session.user.id,
+          numChecked: 1,
+        },
+      });
+
       return newSnipit;
     }),
 

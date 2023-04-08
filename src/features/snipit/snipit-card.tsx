@@ -1,7 +1,18 @@
-import { type SnipitTag, type Snipit, type Tag } from "@prisma/client";
+import {
+  type SnipitTag,
+  type Snipit,
+  type Tag,
+  SnipitInteractions,
+  User,
+} from "@prisma/client";
 import React, { useState, useEffect } from "react";
-import { AiFillHeart, AiOutlineHeart } from "react-icons/ai";
-import { GrCheckboxSelected, GrCheckbox } from "react-icons/gr";
+import {
+  AiFillHeart,
+  AiOutlineCheckCircle,
+  AiOutlineCloseCircle,
+  AiOutlineHeart,
+} from "react-icons/ai";
+import { UserAvatar } from "~/components/user-avatar";
 import { api } from "~/utils/api";
 
 type SnipitCardProps = {
@@ -9,20 +20,16 @@ type SnipitCardProps = {
     tags: (SnipitTag & {
       tag: Tag;
     })[];
+    interactions: SnipitInteractions[];
+    creator: User;
   };
   onChecked?: () => void;
 };
 
 function SnipitCard({ snipit, onChecked }: SnipitCardProps) {
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const updateNumFollowsMutation = api.snipit.updateNumFollows.useMutation();
   const updateNumCheckedMutation = api.snipit.updateNumChecked.useMutation();
-
-  useEffect(() => {
-    // Check if the user has a SnipitInteraction record for this snipit
-    // and set isFollowing and isChecked accordingly
-  }, [snipit]);
 
   const handleFollow = async () => {
     try {
@@ -39,44 +46,39 @@ function SnipitCard({ snipit, onChecked }: SnipitCardProps) {
   const handleCheck = async () => {
     try {
       await updateNumCheckedMutation.mutateAsync({ snipitId: snipit.id });
-      setIsChecked(!isChecked);
-      if (onChecked) onChecked();
+      onChecked?.();
     } catch (error) {
       console.error("Error updating numChecked", error);
     }
   };
 
   return (
-    <div className="rounded border p-4">
-      <div className="mb-4">{snipit.prompt}</div>
-      <div className="flex items-center justify-between">
-        <div>
-          {snipit.tags?.map((tag) => (
-            <span
-              key={tag.tagId}
-              className="mr-2 inline-block rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-700"
-            >
-              {tag.tag.name}
-            </span>
-          ))}
-        </div>
-        <div className="flex items-center">
-          <button onClick={handleFollow} className="flex items-center">
-            {isFollowing ? (
-              <AiFillHeart className="text-red-500" />
-            ) : (
-              <AiOutlineHeart />
-            )}
-            <span className="ml-1">{snipit.numFollows}</span>
-          </button>
-          <button onClick={handleCheck} className="ml-4 flex items-center">
-            {isChecked ? (
-              <GrCheckboxSelected className="text-green-500" />
-            ) : (
-              <GrCheckbox />
-            )}
-          </button>
-        </div>
+    <div className="w-full overflow-hidden rounded-xl border md:w-[365px]">
+      <UserAvatar
+        user={snipit.creator}
+        className="mb-6 bg-sky-600 p-4 text-white"
+      />
+      <div className="p-6">
+        <div className="mb-4">{snipit.prompt}</div>
+        {snipit.tags.map((tag) => (
+          <span key={tag.tag.id} className="mr-2 text-sm text-gray-500">
+            #{tag.tag.name}
+          </span>
+        ))}
+      </div>
+      <div className="grid grid-cols-2">
+        <button
+          onClick={handleCheck}
+          className="box-border w-full rounded-bl-xl border-2 border-red-500 p-2"
+        >
+          <AiOutlineCloseCircle className="mx-auto text-4xl text-red-500" />
+        </button>
+        <button
+          onClick={handleCheck}
+          className="w-full rounded-br-xl bg-green-500 p-2"
+        >
+          <AiOutlineCheckCircle className="mx-auto text-4xl text-white" />
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { useZodForm } from "~/hooks/use-zod-form";
 import { Button } from "~/components/ui/button";
@@ -28,18 +28,19 @@ type SnipitInput = {
 
 export function CreateSnipit() {
   const [open, setOpen] = useState(false);
-  const { formState, handleSubmit, register } = useZodForm({
+  const { formState, handleSubmit, register, reset, watch } = useZodForm({
     schema: validationSchema,
     defaultValues: {
       prompt: "",
       isPublic: false,
     },
   });
+  const promptCharLength = watch("prompt").length;
+
   const snipitMutation = api.snipit.createSnipit.useMutation();
   const { toast } = useToast();
 
   const onSubmit = async (data: SnipitInput) => {
-    console.log("data", data);
     try {
       await snipitMutation.mutateAsync(data);
       toast({
@@ -47,6 +48,7 @@ export function CreateSnipit() {
         description: "Your Snipit has been successfully created.",
       });
       setOpen(false);
+      reset();
     } catch (error) {
       toast({
         title: "Error",
@@ -70,11 +72,14 @@ export function CreateSnipit() {
               <DialogDescription>Create a new snipit</DialogDescription>
             </DialogHeader>
             <Label htmlFor="prompt">Prompt</Label>
-            <Textarea {...register("prompt")} />
-            <Label htmlFor="isPublic" className="mt-2">
-              <Checkbox {...register("isPublic")} />
-              Make public
-            </Label>
+            <Textarea {...register("prompt")} className="my-2" />
+            <div className="flex justify-between">
+              <div className="flex items-center gap-x-3">
+                <Label htmlFor="isPublic">Make public</Label>
+                <input type="checkbox" {...register("isPublic")} />
+              </div>
+              <div>{promptCharLength} / 240</div>
+            </div>
             <div className="mt-3 flex flex-col">
               {formState.errors &&
                 Object.entries(formState.errors).map(([key, value]) => (

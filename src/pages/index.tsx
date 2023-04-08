@@ -1,9 +1,11 @@
 import { type NextPage } from "next";
+import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { CreateSnipit } from "~/features/snipit/create-snipit";
 import { RandomSnipit } from "~/features/snipit/random-snipit";
 
 const Home: NextPage = () => {
+  const { data: sessionData } = useSession();
   return (
     <>
       <Head>
@@ -15,9 +17,9 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
         <meta name="privacy" content="OpenPD"></meta>
       </Head>
-      <section className="flex items-center justify-center">
+      <section className="flex h-full flex-col items-center justify-center gap-y-5">
         <RandomSnipit />
-        <CreateSnipit />
+        {!!sessionData && <CreateSnipit />}
       </section>
     </>
   );

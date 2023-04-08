@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import SnipitCard from "./snipit-card";
-import { SnipitTag, type Snipit, Tag } from "@prisma/client";
+import {
+  type SnipitTag,
+  type Snipit,
+  type Tag,
+  type SnipitInteractions,
+  type User,
+} from "@prisma/client";
 
 export const RandomSnipit = () => {
   const [snipit, setSnipit] = useState<
     | (Snipit & {
+        interactions: SnipitInteractions[];
         tags: (SnipitTag & {
           tag: Tag;
         })[];
+        creator: User;
       })
     | null
   >(null);
