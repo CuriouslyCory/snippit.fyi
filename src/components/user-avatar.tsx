@@ -18,7 +18,7 @@ export const UserAvatar = ({
           <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
         )}
       </Avatar>
-      <span>{user?.name}</span>
+      <span className="font-semibold">{user?.name}</span>
     </section>
   );
 };
