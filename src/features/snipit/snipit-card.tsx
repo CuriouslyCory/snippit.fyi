@@ -9,6 +9,7 @@ import clsx from "clsx";
 import React, { useState, useEffect } from "react";
 import { AiOutlineCheckCircle, AiOutlineCloseCircle } from "react-icons/ai";
 import { UserAvatar } from "~/components/user-avatar";
+import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 
 type SnipitCardProps = {
@@ -20,17 +21,43 @@ type SnipitCardProps = {
     creator: User;
   };
   onChecked?: () => void;
+  onSkipped?: () => void;
+  onAction?: () => void;
 };
 
-function SnipitCard({ snipit, onChecked }: SnipitCardProps) {
-  const updateNumCheckedMutation = api.snipit.updateNumChecked.useMutation();
-  const [test, setTest] = useState(false);
+function SnipitCard({
+  snipit,
+  onChecked,
+  onSkipped,
+  onAction,
+}: SnipitCardProps) {
+  const { toast } = useToast();
+  const checkMutation = api.snipit.check.useMutation();
+  const skipMutation = api.snipit.skip.useMutation();
+
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    setChecked(false);
+  }, [snipit.id]);
 
   const handleCheck = async () => {
-    setTest((tval) => !tval);
+    setChecked((tval) => !tval);
     try {
-      await updateNumCheckedMutation.mutateAsync({ snipitId: snipit.id });
+      await checkMutation.mutateAsync({ snipitId: snipit.id });
       onChecked?.();
+      onAction?.();
+    } catch (error) {
+      toast({ title: "Error updating numChecked", variant: "destructive" });
+    }
+  };
+
+  const handleSkip = async () => {
+    setChecked((tval) => !tval);
+    try {
+      await skipMutation.mutateAsync({ snipitId: snipit.id });
+      onSkipped?.();
+      onAction?.();
     } catch (error) {
       console.error("Error updating numChecked", error);
     }
@@ -47,26 +74,35 @@ function SnipitCard({ snipit, onChecked }: SnipitCardProps) {
           </span>
         ))}
       </div>
-      <div className="grid h-14 grid-cols-2">
-        <button onClick={handleCheck} className="box-border w-full p-2">
+      <div className="grid grid-cols-2">
+        <button
+          onClick={handleSkip}
+          className="box-border w-full p-2"
+          disabled={checked}
+        >
           <AiOutlineCloseCircle className="mx-auto text-4xl text-red-400" />
         </button>
-        <button onClick={handleCheck} className="w-full overflow-hidden p-2">
+        <button
+          onClick={handleCheck}
+          className="h-12 w-full overflow-hidden p-2"
+          disabled={checked}
+        >
           <div className="relative">
             <AiOutlineCheckCircle
               className={clsx(
-                "mx-auto  text-4xl text-green-500 transition-transform duration-300 ease-bounce",
-                { "translate-y-16": test }
+                "mx-auto  text-4xl text-green-500 transition-all duration-300 ease-bounce",
+                { "translate-y-16 opacity-0": checked }
               )}
             />
             <span
               className={clsx(
-                "mx-auto block w-fit  text-4xl text-green-500 transition-transform duration-300 ease-bounce",
-                { "-translate-y-10": test },
-                { "translate-y-2": !test }
+                "mx-auto block w-fit  text-3xl text-green-500 transition-all duration-300 ease-bounce",
+                { "-translate-y-9": checked },
+                { "translate-y-2 opacity-0": !checked }
               )}
             >
-              12
+              {snipit.interactions.length > 0 &&
+                snipit.interactions[0]?.numChecked}
             </span>
           </div>
         </button>

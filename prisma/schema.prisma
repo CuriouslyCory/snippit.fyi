@@ -57,6 +57,7 @@ model User {
     sessions      Session[]
     prompts       Snipit[]
     interactions  SnipitInteractions[]
+    Nope          Nope[]
 }
 
 model VerificationToken {
@@ -77,15 +78,28 @@ model Snipit {
     numFollows   Int
     interactions SnipitInteractions[]
     tags         SnipitTag[]
+    nopes        Nope[]
 }
 
 model SnipitInteractions {
-    id         Int    @id @default(autoincrement())
-    userId     String
-    snipitId   Int
-    numChecked Int
-    user       User   @relation(fields: [userId], references: [id])
-    snipit     Snipit @relation(fields: [snipitId], references: [id])
+    id          Int      @id @default(autoincrement())
+    userId      String
+    snipitId    Int
+    numChecked  Int
+    user        User     @relation(fields: [userId], references: [id])
+    snipit      Snipit   @relation(fields: [snipitId], references: [id])
+    lastChecked DateTime @default(now())
+
+    @@unique([userId, snipitId])
+}
+
+model Nope {
+    id        Int      @id @default(autoincrement())
+    userId    String
+    snipitId  Int
+    snipit    Snipit   @relation(fields: [snipitId], references: [id])
+    user      User     @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now())
 
     @@unique([userId, snipitId])
 }

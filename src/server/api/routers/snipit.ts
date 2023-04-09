@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 
 export const snipitRouter = createTRPCRouter({
   getRandomSnipit: protectedProcedure
-    .input(z.object({ public: z.boolean() }))
+    .input(z.object({ public: z.boolean(), not: z.number().optional() }))
     .query(async ({ input, ctx }) => {
       const { public: isPublic } = input;
       const { id: userId } = ctx.session.user;
@@ -17,7 +17,9 @@ export const snipitRouter = createTRPCRouter({
       const snipitCount = await ctx.prisma.snipit.count();
       const skip = Math.floor(Math.random() * snipitCount);
 
-      const whereClause = isPublic ? { isPublic: true } : { createdBy: userId };
+      const whereClause = isPublic
+        ? { isPublic: true, ...(input.not && { NOT: { id: input.not } }) }
+        : { createdBy: userId, ...(input.not && { NOT: { id: input.not } }) };
 
       const snipit = await ctx.prisma.snipit.findFirst({
         take: 1,
@@ -96,19 +98,18 @@ export const snipitRouter = createTRPCRouter({
       return deletedSnipit;
     }),
 
-  updateNumFollows: protectedProcedure
+  check: protectedProcedure
     .input(
       z.object({
         snipitId: z.number(),
-        increment: z.boolean(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { snipitId, increment } = input;
+      const { snipitId } = input;
 
       if (!ctx?.session.user)
         throw new TRPCError({
-          message: "You must be logged in to follow a snipit.",
+          message: "You must be logged in to perform this action.",
           code: "UNAUTHORIZED",
         });
 
@@ -117,6 +118,9 @@ export const snipitRouter = createTRPCRouter({
         // Retrieve the snipit by id
         const snipit = await prisma.snipit.findUnique({
           where: { id: snipitId },
+          include: {
+            interactions: { where: { userId: ctx.session.user.id }, take: 1 },
+          },
         });
 
         if (!snipit) {
@@ -126,17 +130,7 @@ export const snipitRouter = createTRPCRouter({
           });
         }
 
-        // Update numFollows value
-        await prisma.snipit.update({
-          where: { id: snipitId },
-          data: {
-            numFollows: increment
-              ? snipit.numFollows + 1
-              : Math.max(0, snipit.numFollows - 1),
-          },
-        });
-
-        if (increment) {
+        if (!snipit.interactions.length) {
           // Create a SnipitInteraction record
           await prisma.snipitInteractions.create({
             data: {
@@ -145,7 +139,65 @@ export const snipitRouter = createTRPCRouter({
               numChecked: 1,
             },
           });
+
+          // Update numFollows value
+          await prisma.snipit.update({
+            where: { id: snipitId },
+            data: {
+              numFollows: snipit.numFollows + 1,
+            },
+          });
         } else {
+          // Update numChecked value
+          if (!snipit?.interactions?.[0]?.id)
+            throw new TRPCError({
+              message: "Something went wrong.",
+              code: "INTERNAL_SERVER_ERROR",
+            });
+          await prisma.snipitInteractions.update({
+            where: { id: snipit.interactions[0].id },
+            data: {
+              numChecked: snipit.interactions[0].numChecked + 1,
+            },
+          });
+        }
+      });
+
+      return { success: true };
+    }),
+  skip: protectedProcedure
+    .input(
+      z.object({
+        snipitId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { snipitId } = input;
+
+      if (!ctx?.session.user)
+        throw new TRPCError({
+          message: "You must be logged in to perform this action.",
+          code: "UNAUTHORIZED",
+        });
+
+      // Start a Prisma transaction
+      await ctx.prisma.$transaction(async (prisma) => {
+        // Retrieve the snipit by id
+        const snipit = await prisma.snipit.findUnique({
+          where: { id: snipitId },
+          include: {
+            interactions: { where: { userId: ctx.session.user.id }, take: 1 },
+          },
+        });
+
+        if (!snipit) {
+          throw new TRPCError({
+            message: "Snipit does not exist.",
+            code: "NOT_FOUND",
+          });
+        }
+
+        if (snipit.interactions.length) {
           // Remove the SnipitInteraction record
           await prisma.snipitInteractions.delete({
             where: {
@@ -155,32 +207,19 @@ export const snipitRouter = createTRPCRouter({
               },
             },
           });
+
+          // Update numFollows value
+          await prisma.snipit.update({
+            where: { id: snipitId },
+            data: {
+              numFollows: snipit.numFollows - 1,
+            },
+          });
         }
-      });
 
-      return { success: true };
-    }),
-
-  updateNumChecked: protectedProcedure
-    .input(z.object({ snipitId: z.number() }))
-    .mutation(async ({ input, ctx }) => {
-      const { snipitId } = input;
-      const userId = ctx.session.user.id;
-
-      const snipitInteraction = await ctx.prisma.snipitInteractions.findUnique({
-        where: { userId_snipitId: { snipitId, userId } },
-      });
-
-      if (!snipitInteraction) {
-        throw new Error("User is not following this snipit");
-      }
-      await ctx.prisma.snipitInteractions.update({
-        where: { userId_snipitId: { snipitId, userId } },
-        data: {
-          numChecked: {
-            increment: 1,
-          },
-        },
+        await prisma.nope.create({
+          data: { userId: ctx.session.user.id, snipitId: snipitId },
+        });
       });
 
       return { success: true };
