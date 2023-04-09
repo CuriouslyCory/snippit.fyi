@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 import { api } from "~/utils/api";
 import { Textarea } from "~/components/ui/textarea";
+import { SnipitTagInput } from "./snipit-tag-input";
 
 const validationSchema = z.object({
   prompt: z
@@ -31,6 +32,7 @@ type SnipitInput = {
 export function CreateSnipit() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [tags, setTags] = useState<Array<string>>([]);
 
   /**
    * Initialize useZodForm hook
@@ -55,7 +57,7 @@ export function CreateSnipit() {
    */
   const onSubmit = async (data: SnipitInput) => {
     try {
-      await snipitMutation.mutateAsync(data);
+      await snipitMutation.mutateAsync({ ...data, tags });
       toast({
         title: "Snipit created",
         description: "Your Snipit has been successfully created.",
@@ -107,6 +109,7 @@ export function CreateSnipit() {
                   </p>
                 ))}
             </div>
+            <SnipitTagInput setTags={setTags} />
             <DialogFooter>
               <Button
                 type="submit"

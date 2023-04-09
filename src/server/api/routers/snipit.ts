@@ -7,6 +7,7 @@ import {
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { getRandomInt } from "~/utils/random";
+import { Tag } from "@prisma/client";
 
 /**
  * Snipit query option helpers
@@ -106,9 +107,37 @@ export const snipitRouter = createTRPCRouter({
       z.object({
         prompt: z.string(),
         isPublic: z.boolean(),
+        tags: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // if there are tags, format them into objects that can be used to create
+      // First, upsert the tags
+
+      let tags: Tag[] = [];
+      if (input.tags?.length) {
+        tags = await Promise.all(
+          input.tags?.map((tagName: string) =>
+            ctx.prisma.tag.upsert({
+              where: { name: tagName },
+              create: { name: tagName },
+              update: {},
+            })
+          )
+        );
+      }
+
+      const tagData =
+        input.tags && input.tags.length
+          ? {
+              tags: {
+                create: tags.map((tag) => ({
+                  tagId: tag.id,
+                })),
+              },
+            }
+          : undefined;
+
       // create new snipit
       const newSnipit = await ctx.prisma.snipit.create({
         data: {
@@ -116,15 +145,13 @@ export const snipitRouter = createTRPCRouter({
           isPublic: input.isPublic,
           numFollows: 1,
           createdBy: ctx.session.user.id,
-        },
-      });
-
-      // add owner's interaction record
-      await ctx.prisma.snipitInteractions.create({
-        data: {
-          snipitId: newSnipit.id,
-          userId: ctx.session.user.id,
-          numChecked: 1,
+          ...tagData,
+          interactions: {
+            create: {
+              userId: ctx.session.user.id,
+              numChecked: 1,
+            },
+          },
         },
       });
 

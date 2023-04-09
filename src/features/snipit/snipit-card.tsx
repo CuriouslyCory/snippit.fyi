@@ -110,7 +110,7 @@ function SnipitCard({
               )}
             >
               {snipit.interactions.length > 0 &&
-                snipit.interactions[0]?.numChecked}
+                (snipit.interactions[0]?.numChecked ?? 0) + 1}
             </span>
           </div>
         </button>
