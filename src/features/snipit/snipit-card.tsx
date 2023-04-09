@@ -35,12 +35,16 @@ function SnipitCard({
   const checkMutation = api.snipit.check.useMutation();
   const skipMutation = api.snipit.skip.useMutation();
 
+  // Set to true when user clicks check button
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     setChecked(false);
   }, [snipit.id]);
 
+  /**
+   * Handle the check button click
+   */
   const handleCheck = async () => {
     setChecked((tval) => !tval);
     try {
@@ -49,16 +53,20 @@ function SnipitCard({
       onAction?.();
     } catch (error) {
       toast({ title: "Error updating numChecked", variant: "destructive" });
+      console.error("Error updating numChecked", error);
     }
   };
 
+  /**
+   * Handle the skip button click
+   */
   const handleSkip = async () => {
-    setChecked((tval) => !tval);
     try {
       await skipMutation.mutateAsync({ snipitId: snipit.id });
       onSkipped?.();
       onAction?.();
     } catch (error) {
+      toast({ title: "Error updating numChecked", variant: "destructive" });
       console.error("Error updating numChecked", error);
     }
   };

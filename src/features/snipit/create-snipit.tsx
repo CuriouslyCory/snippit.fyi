@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { useZodForm } from "~/hooks/use-zod-form";
 import { Button } from "~/components/ui/button";
@@ -14,10 +14,12 @@ import {
 import { z } from "zod";
 import { api } from "~/utils/api";
 import { Textarea } from "~/components/ui/textarea";
-import { Checkbox } from "~/components/ui/checkbox";
 
 const validationSchema = z.object({
-  prompt: z.string().min(1, { message: "Prompt is required" }),
+  prompt: z
+    .string()
+    .min(1, { message: "Prompt is required" })
+    .max(240, "Maximum prompt length is 240 characters"),
   isPublic: z.boolean(),
 });
 
@@ -27,7 +29,12 @@ type SnipitInput = {
 };
 
 export function CreateSnipit() {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+
+  /**
+   * Initialize useZodForm hook
+   */
   const { formState, handleSubmit, register, reset, watch } = useZodForm({
     schema: validationSchema,
     defaultValues: {
@@ -35,11 +42,17 @@ export function CreateSnipit() {
       isPublic: false,
     },
   });
+
+  // Get the length of the prompt for the character count
   const promptCharLength = watch("prompt").length;
 
+  // Create snipit mutation
   const snipitMutation = api.snipit.createSnipit.useMutation();
-  const { toast } = useToast();
 
+  /**
+   * Form Submit function
+   * @param data pre-valdiated by zod validation schema
+   */
   const onSubmit = async (data: SnipitInput) => {
     try {
       await snipitMutation.mutateAsync(data);
@@ -58,10 +71,16 @@ export function CreateSnipit() {
     }
   };
 
+  /**
+   * Default component state. Display the button to open the dialog
+   */
   if (!open) {
     return <Button onClick={() => setOpen(true)}>Add new</Button>;
   }
 
+  /**
+   * Create snipit dialog
+   */
   return (
     <div>
       <Dialog open={open} onOpenChange={setOpen}>
