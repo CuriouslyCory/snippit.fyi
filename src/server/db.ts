@@ -13,4 +13,12 @@ export const prisma =
       env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
+// if (!!prisma && prisma instanceof PrismaClient) {
+//   prisma.$on("query", (e) => {
+//     console.log("Query: " + e.query);
+//     console.log("Params: " + e.params);
+//     console.log("Duration: " + e.duration + "ms");
+//   });
+// }
+
 if (env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

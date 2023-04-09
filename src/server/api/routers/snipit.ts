@@ -6,23 +6,81 @@ import {
   protectedProcedure,
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { getRandomInt } from "~/utils/random";
 
+/**
+ * Snipit query option helpers
+ */
+type UserNope = {
+  nopes?: {
+    some: {
+      userId: string;
+    };
+  };
+};
+
+type SnipitId = {
+  id: number;
+};
+
+type RandomSnippitWhereNot = UserNope | SnipitId;
+
+type RandomSnippitWhereClause = {
+  isPublic: boolean;
+  NOT?: RandomSnippitWhereNot | { OR: RandomSnippitWhereNot[] };
+};
+
+/**
+ * Snipit router
+ */
 export const snipitRouter = createTRPCRouter({
+  /**
+   * Get a random snipit
+   * @param public - if true, include public snippits, if false only return user's snipits
+   * @param not - if set, exclude this snipit
+   */
   getRandomSnipit: protectedProcedure
     .input(z.object({ public: z.boolean(), not: z.number().optional() }))
     .query(async ({ input, ctx }) => {
       const { public: isPublic } = input;
-      const { id: userId } = ctx.session.user;
+      const { id: userId } = ctx?.session?.user;
 
-      const snipitCount = await ctx.prisma.snipit.count();
-      const skip = Math.floor(Math.random() * snipitCount);
+      const whereClause: RandomSnippitWhereClause = {
+        isPublic,
+      };
 
-      const whereClause = isPublic
-        ? { isPublic: true, ...(input.not && { NOT: { id: input.not } }) }
-        : { createdBy: userId, ...(input.not && { NOT: { id: input.not } }) };
+      const whereNot: RandomSnippitWhereNot[] = [];
+
+      // if the user is logged in, filterout their nopes
+      if (userId) {
+        whereNot.push({
+          nopes: {
+            some: {
+              userId: userId,
+            },
+          },
+        });
+      }
+
+      // if "not" is set, filter this record out
+      if (input.not) {
+        whereNot.push({ id: input.not });
+      }
+
+      if (whereNot.length) {
+        whereClause.NOT =
+          whereNot.length === 1 ? whereNot[0] : { OR: whereNot };
+      }
+
+      const snipitWhere = {
+        where: whereClause,
+      };
+
+      // get the total possible count of snipits
+      const snipitCount = await ctx.prisma.snipit.count(snipitWhere);
+      const skip = getRandomInt(0, snipitCount - 1);
 
       const snipit = await ctx.prisma.snipit.findFirst({
-        take: 1,
         skip,
         where: whereClause,
         include: {
@@ -31,7 +89,6 @@ export const snipitRouter = createTRPCRouter({
           creator: true,
         },
       });
-
       return snipit;
     }),
 
