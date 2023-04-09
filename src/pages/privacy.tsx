@@ -1,4 +1,4 @@
-import { NextPage } from "next";
+import { type NextPage } from "next";
 
 export const Privacy: NextPage = () => {
   return (
@@ -547,3 +547,5 @@ export const Privacy: NextPage = () => {
     </>
   );
 };
+
+export default Privacy;
