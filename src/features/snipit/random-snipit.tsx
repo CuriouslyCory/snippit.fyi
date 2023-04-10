@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import SnipitCard from "./snipit-card";
-import {
-  type SnipitTag,
-  type Snipit,
-  type Tag,
-  type SnipitInteractions,
-  type User,
-} from "@prisma/client";
 import Image from "next/image";
 
 export type RandomSnipitQuery = {
@@ -15,29 +8,22 @@ export type RandomSnipitQuery = {
   not?: number;
 };
 
+// Primary snipit display component. Gets "random" snipit from the database.
 export const RandomSnipit = () => {
-  const [snipit, setSnipit] = useState<
-    | (Snipit & {
-        interactions: SnipitInteractions[];
-        tags: (SnipitTag & {
-          tag: Tag;
-        })[];
-        creator: User;
-      })
-    | null
-  >(null);
   const [query, setQuery] = useState<RandomSnipitQuery>({
     public: true,
   });
   const getRandomSnipitQuery = api.snipit.getRandomSnipit.useQuery(query);
+  const [snipit, setSnipit] = useState<typeof getRandomSnipitQuery.data | null>(
+    null
+  );
 
+  // triggered when a user clicks any action on a snipit card.
   const fetchNextSnipit = useCallback(() => {
-    console.log("Updating random query");
     setQuery({ ...query, not: snipit?.id });
   }, [query, snipit?.id]);
 
-  useEffect(() => console.log(query), [query]);
-
+  // setting this here instead of in the callback because it of an issue with setting state while rendering another component
   useEffect(() => {
     if (getRandomSnipitQuery.data) {
       setSnipit(getRandomSnipitQuery?.data);
@@ -48,6 +34,7 @@ export const RandomSnipit = () => {
     return <div>Error: {getRandomSnipitQuery.error.message}</div>;
   }
 
+  // todo: move the loader into a component that can be triggered globally through a hook like "useToast"
   return (
     <div>
       {getRandomSnipitQuery.isLoading && (
@@ -57,13 +44,7 @@ export const RandomSnipit = () => {
           </div>
         </div>
       )}
-      {snipit && (
-        <SnipitCard
-          snipit={snipit}
-          onAction={fetchNextSnipit}
-          key={snipit.id}
-        />
-      )}
+      {snipit && <SnipitCard snipit={snipit} onAction={fetchNextSnipit} />}
     </div>
   );
 };
