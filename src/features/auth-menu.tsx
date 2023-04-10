@@ -31,14 +31,16 @@ const AuthMenu: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Avatar>
-          {userAvatar ? (
-            <AvatarImage src={userAvatar} />
-          ) : (
-            <AvatarFallback>{screenName?.charAt(0)}</AvatarFallback>
-          )}
+        <div className="flex items-center gap-x-3">
+          <Avatar className="border-2 border-white">
+            {userAvatar ? (
+              <AvatarImage src={userAvatar} />
+            ) : (
+              <AvatarFallback>{screenName?.charAt(0)}</AvatarFallback>
+            )}
+          </Avatar>
           <span>{screenName}</span>
-        </Avatar>
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <Link href="/profile">

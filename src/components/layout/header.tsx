@@ -7,7 +7,7 @@ export const Header = (): JSX.Element => {
     <header className="bg-sky-700 px-6 py-4 text-white md:px-16">
       <div className="flex items-center">
         <Link href="/">
-          <div className="flex items-center">
+          <div className="flex h-16 w-16 items-center">
             <Image
               src="/images/logo.svg"
               height={75}
