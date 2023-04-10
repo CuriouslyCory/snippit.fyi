@@ -8,6 +8,7 @@ import {
   type SnipitInteractions,
   type User,
 } from "@prisma/client";
+import Image from "next/image";
 
 export type RandomSnipitQuery = {
   public: boolean;
@@ -44,7 +45,11 @@ export const RandomSnipit = () => {
   }, [getRandomSnipitQuery.data]);
 
   if (getRandomSnipitQuery.isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="h-20 w-20 animate-spin">
+        <Image src="/images/logo.svg" alt="Illustration of scissors" fill />
+      </div>
+    );
   }
 
   if (getRandomSnipitQuery.error) {
