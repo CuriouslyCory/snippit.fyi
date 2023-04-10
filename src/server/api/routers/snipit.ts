@@ -4,6 +4,7 @@ import {
   createTRPCRouter,
   publicProcedure,
   protectedProcedure,
+  authAwareProcedure,
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { getRandomInt } from "~/utils/random";
@@ -40,11 +41,11 @@ export const snipitRouter = createTRPCRouter({
    * @param public - if true, include public snippits, if false only return user's snipits
    * @param not - if set, exclude this snipit
    */
-  getRandomSnipit: protectedProcedure
+  getRandomSnipit: authAwareProcedure
     .input(z.object({ public: z.boolean(), not: z.number().optional() }))
     .query(async ({ input, ctx }) => {
       const { public: isPublic } = input;
-      const { id: userId } = ctx?.session?.user;
+      const userId = ctx?.session?.user?.id;
 
       const whereClause: RandomSnippitWhereClause = {
         isPublic,
@@ -86,7 +87,7 @@ export const snipitRouter = createTRPCRouter({
         where: whereClause,
         include: {
           tags: { include: { tag: true } },
-          interactions: { where: { userId: ctx.session.user.id }, take: 1 },
+          interactions: { where: { userId }, take: 1 },
           creator: true,
         },
       });

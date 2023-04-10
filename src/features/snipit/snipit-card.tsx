@@ -6,6 +6,7 @@ import {
   type User,
 } from "@prisma/client";
 import clsx from "clsx";
+import { useSession } from "next-auth/react";
 import React, { useState, useEffect } from "react";
 import { AiOutlineCheckCircle, AiOutlineCloseCircle } from "react-icons/ai";
 import { UserAvatar } from "~/components/user-avatar";
@@ -34,6 +35,7 @@ function SnipitCard({
   const { toast } = useToast();
   const checkMutation = api.snipit.check.useMutation();
   const skipMutation = api.snipit.skip.useMutation();
+  const { data: sessionData } = useSession();
 
   // Set to true when user clicks check button
   const [checked, setChecked] = useState(false);
@@ -71,6 +73,18 @@ function SnipitCard({
     }
   };
 
+  /**
+   * Handle the skip button click
+   */
+  const handleNext = () => {
+    try {
+      onAction?.();
+    } catch (error) {
+      toast({ title: "Error updating numChecked", variant: "destructive" });
+      console.error("Error updating numChecked", error);
+    }
+  };
+
   return (
     <div className="w-full overflow-hidden  shadow-md md:w-[365px]">
       <UserAvatar user={snipit.creator} className="mb-4 p-4 text-slate-600" />
@@ -82,39 +96,50 @@ function SnipitCard({
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-2">
+      {sessionData?.user?.id && (
+        <div className="grid grid-cols-2">
+          <button
+            onClick={handleSkip}
+            className="box-border w-full p-2"
+            disabled={checked}
+          >
+            <AiOutlineCloseCircle className="mx-auto text-4xl text-red-400" />
+          </button>
+          <button
+            onClick={handleCheck}
+            className="h-12 w-full overflow-hidden p-2"
+            disabled={checked}
+          >
+            <div className="relative">
+              <AiOutlineCheckCircle
+                className={clsx(
+                  "mx-auto  text-4xl text-green-500 transition-all duration-300 ease-bounce",
+                  { "translate-y-16 opacity-0": checked }
+                )}
+              />
+              <span
+                className={clsx(
+                  "mx-auto block w-fit  text-3xl text-green-500 transition-all duration-300 ease-bounce",
+                  { "-translate-y-9": checked },
+                  { "translate-y-2 opacity-0": !checked }
+                )}
+              >
+                {snipit.interactions.length > 0 &&
+                  (snipit.interactions[0]?.numChecked ?? 0) + 1}
+              </span>
+            </div>
+          </button>
+        </div>
+      )}
+      {!sessionData?.user?.id && (
         <button
-          onClick={handleSkip}
+          onClick={handleNext}
           className="box-border w-full p-2"
           disabled={checked}
         >
-          <AiOutlineCloseCircle className="mx-auto text-4xl text-red-400" />
+          <AiOutlineCheckCircle className="mx-auto text-4xl text-green-500" />
         </button>
-        <button
-          onClick={handleCheck}
-          className="h-12 w-full overflow-hidden p-2"
-          disabled={checked}
-        >
-          <div className="relative">
-            <AiOutlineCheckCircle
-              className={clsx(
-                "mx-auto  text-4xl text-green-500 transition-all duration-300 ease-bounce",
-                { "translate-y-16 opacity-0": checked }
-              )}
-            />
-            <span
-              className={clsx(
-                "mx-auto block w-fit  text-3xl text-green-500 transition-all duration-300 ease-bounce",
-                { "-translate-y-9": checked },
-                { "translate-y-2 opacity-0": !checked }
-              )}
-            >
-              {snipit.interactions.length > 0 &&
-                (snipit.interactions[0]?.numChecked ?? 0) + 1}
-            </span>
-          </div>
-        </button>
-      </div>
+      )}
     </div>
   );
 }
