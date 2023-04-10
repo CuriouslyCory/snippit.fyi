@@ -44,20 +44,19 @@ export const RandomSnipit = () => {
     }
   }, [getRandomSnipitQuery.data]);
 
-  if (getRandomSnipitQuery.isLoading) {
-    return (
-      <div className="h-20 w-20 animate-spin">
-        <Image src="/images/logo.svg" alt="Illustration of scissors" fill />
-      </div>
-    );
-  }
-
   if (getRandomSnipitQuery.error) {
     return <div>Error: {getRandomSnipitQuery.error.message}</div>;
   }
 
   return (
     <div>
+      {getRandomSnipitQuery.isLoading && (
+        <div className="absolute left-0 top-0 flex h-screen w-screen items-center justify-center bg-slate-400/20">
+          <div className="h-20 w-20 animate-spin">
+            <Image src="/images/logo.svg" alt="Illustration of scissors" fill />
+          </div>
+        </div>
+      )}
       {snipit && (
         <SnipitCard
           snipit={snipit}
