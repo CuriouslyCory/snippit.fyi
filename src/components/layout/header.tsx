@@ -16,7 +16,9 @@ export const Header = (): JSX.Element => {
             />
             <div className="ml-2 flex flex-col">
               <span className="text-3xl">Snipit</span>
-              <span className="">Ideas worth seeing more than once</span>
+              <span className="hidden md:inline">
+                Ideas worth seeing more than once
+              </span>
             </div>
           </div>
         </Link>

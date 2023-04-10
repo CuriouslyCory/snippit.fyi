@@ -36,7 +36,7 @@ export const RandomSnipit = () => {
 
   // todo: move the loader into a component that can be triggered globally through a hook like "useToast"
   return (
-    <div>
+    <div className="m-5 md:m-0">
       {getRandomSnipitQuery.isLoading && (
         <div className="absolute left-0 top-0 flex h-screen w-screen items-center justify-center bg-slate-400/20">
           <div className="h-20 w-20 animate-spin">
