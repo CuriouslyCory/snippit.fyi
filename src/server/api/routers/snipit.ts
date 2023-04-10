@@ -111,22 +111,21 @@ export const snipitRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // if there are tags, format them into objects that can be used to create
-      // First, upsert the tags
-
+      // First, upsert the tags (if there are any)
       let tags: Tag[] = [];
       if (input.tags?.length) {
         tags = await Promise.all(
           input.tags?.map((tagName: string) =>
             ctx.prisma.tag.upsert({
-              where: { name: tagName },
-              create: { name: tagName },
+              where: { name: tagName.trim().toLowerCase() },
+              create: { name: tagName.trim().toLowerCase() },
               update: {},
             })
           )
         );
       }
 
+      // form the tagdata object
       const tagData =
         input.tags && input.tags.length
           ? {
@@ -138,10 +137,10 @@ export const snipitRouter = createTRPCRouter({
             }
           : undefined;
 
-      // create new snipit
+      // create new snipit, interaction, and tags
       const newSnipit = await ctx.prisma.snipit.create({
         data: {
-          prompt: input.prompt,
+          prompt: input.prompt.trim(),
           isPublic: input.isPublic,
           numFollows: 1,
           createdBy: ctx.session.user.id,
