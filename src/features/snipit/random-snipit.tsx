@@ -13,7 +13,9 @@ export const RandomSnipit = () => {
   const [query, setQuery] = useState<RandomSnipitQuery>({
     public: true,
   });
-  const getRandomSnipitQuery = api.snipit.getRandomSnipit.useQuery(query);
+  const getRandomSnipitQuery = api.snipit.getRandomSnipit.useQuery(query, {
+    cacheTime: 1,
+  });
   const [snipit, setSnipit] = useState<typeof getRandomSnipitQuery.data | null>(
     null
   );
