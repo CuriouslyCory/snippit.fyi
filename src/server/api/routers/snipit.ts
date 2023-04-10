@@ -2,13 +2,12 @@
 import { z } from "zod";
 import {
   createTRPCRouter,
-  publicProcedure,
   protectedProcedure,
   authAwareProcedure,
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { getRandomInt } from "~/utils/random";
-import { Tag } from "@prisma/client";
+import { type Tag } from "@prisma/client";
 
 /**
  * Snipit query option helpers
