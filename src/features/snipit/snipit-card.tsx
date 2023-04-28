@@ -40,6 +40,9 @@ function SnipitCard({
   // Set to true when user clicks check button
   const [checked, setChecked] = useState(false);
 
+  /**
+   * When the snipit ID changes, reset the state
+   */
   useEffect(() => {
     setChecked(false);
   }, [snipit.id]);
