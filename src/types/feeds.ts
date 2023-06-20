@@ -1,0 +1,1 @@
+export type FeedTypes = "anonymous" | "focus" | "follow";

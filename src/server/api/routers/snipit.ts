@@ -6,7 +6,7 @@ import {
   authAwareProcedure,
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { getRandomInt } from "~/utils/random";
+import { getLogarithmicRandomNumber, getRandomInt } from "~/utils/random";
 import { type Tag } from "@prisma/client";
 
 /**
@@ -27,7 +27,6 @@ type SnipitId = {
 type RandomSnippitWhereNot = UserNope | SnipitId;
 
 type RandomSnippitWhereClause = {
-  isPublic: boolean;
   NOT?: RandomSnippitWhereNot | { OR: RandomSnippitWhereNot[] };
 };
 
@@ -40,15 +39,12 @@ export const snipitRouter = createTRPCRouter({
    * @param public - if true, include public snippits, if false only return user's snipits
    * @param not - if set, exclude this snipit
    */
-  getRandomSnipit: authAwareProcedure
-    .input(z.object({ public: z.boolean(), not: z.number().optional() }))
+  getAnonList: authAwareProcedure
+    .input(z.object({ feedType: z.string(), not: z.number().optional() }))
     .query(async ({ input, ctx }) => {
-      const { public: isPublic } = input;
       const userId = ctx?.session?.user?.id;
 
-      const whereClause: RandomSnippitWhereClause = {
-        isPublic,
-      };
+      const whereClause: RandomSnippitWhereClause = {};
 
       const whereNot: RandomSnippitWhereNot[] = [];
 
@@ -92,7 +88,65 @@ export const snipitRouter = createTRPCRouter({
       });
       return snipit;
     }),
+  getNext: protectedProcedure
+    .input(z.object({ feedType: z.string(), not: z.number().optional() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx?.session?.user?.id;
 
+      const whereClause: RandomSnippitWhereClause = {};
+
+      const whereNot: RandomSnippitWhereNot[] = [];
+
+      // if the user is logged in, filterout their nopes
+
+      whereNot.push({
+        nopes: {
+          some: {
+            userId: userId,
+          },
+        },
+      });
+
+      // if "not" is set, filter this record out
+      if (input.not) {
+        whereNot.push({ id: input.not });
+      }
+
+      if (whereNot.length) {
+        whereClause.NOT =
+          whereNot.length === 1 ? whereNot[0] : { OR: whereNot };
+      }
+
+      const snipitWhere = {
+        where: whereClause,
+      };
+
+      // get the total possible count of snipits
+      const snipitCount = await ctx.prisma.snipit.count(snipitWhere);
+      const skip = getLogarithmicRandomNumber(1, snipitCount) - 1;
+
+      // the more a user has checked a snipit the less often it will show up
+      // but we don't want to wait until the newest is fully caught up so we need to weight it somehow
+      //snipit 1, checked 100, last 1 hr
+      //snipit 2, checked 25, last 1 hr
+      //snipit 3, checked 5, last 1 hr  <== in this example this should be first
+
+      const snipit = await ctx.prisma.snipit.findMany({
+        where: whereClause,
+        skip,
+        take: 1,
+        include: {
+          tags: { include: { tag: true } },
+          interactions: {
+            where: { userId },
+            take: 1,
+            orderBy: [{ numChecked: "asc" }, { lastChecked: "asc" }],
+          },
+          creator: true,
+        },
+      });
+      return snipit[0];
+    }),
   getSnipitById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
@@ -190,6 +244,7 @@ export const snipitRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { snipitId } = input;
 
+      // TODO: Handle this in middleware
       if (!ctx?.session.user)
         throw new TRPCError({
           message: "You must be logged in to perform this action.",
@@ -307,8 +362,4 @@ export const snipitRouter = createTRPCRouter({
 
       return { success: true };
     }),
-  getSnipits: protectedProcedure.query(async ({ ctx }) => {
-    const snipits = await ctx.prisma.snipit.findMany();
-    return snipits;
-  }),
 });
