@@ -1,12 +1,10 @@
 import { type NextPage } from "next";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
-import { useState } from "react";
 import { FeedTypeSelect } from "~/components/feed-type-select";
 import AuthMenu from "~/features/auth-menu";
 import { CreateSnipit } from "~/features/snipit/create-snipit";
 import { RandomSnipit } from "~/features/snipit/random-snipit";
-import { type FeedTypes } from "~/types/feeds";
 
 const Home: NextPage = () => {
   const { data: sessionData } = useSession();

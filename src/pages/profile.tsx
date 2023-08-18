@@ -1,4 +1,4 @@
-import { NextPage } from "next";
+import { type NextPage } from "next";
 
 export const ProfilePage: NextPage = () => {
   return (
