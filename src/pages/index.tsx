@@ -21,11 +21,9 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
         <meta name="privacy" content="OpenPD"></meta>
       </Head>
-      <div className="mt-10 flex gap-x-10">
-        <section className="ml-auto">
-          {!!sessionData && (
-            <FeedTypeSelect />
-          )}
+      <div className="mt-10 flex flex-col gap-x-10 md:flex-row">
+        <section className="ml-auto px-6 md:px-0">
+          {!!sessionData && <FeedTypeSelect />}
           {!sessionData && (
             <div className="w-36">
               <AuthMenu />
@@ -36,7 +34,7 @@ const Home: NextPage = () => {
           <RandomSnipit />
           {!!sessionData && <CreateSnipit />}
         </section>
-        <section className="mr-auto">Right Menu</section>
+        <section className="mr-auto hidden md:block">Right Menu</section>
       </div>
     </>
   );
